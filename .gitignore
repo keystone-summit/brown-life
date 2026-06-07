@@ -1,0 +1,12 @@
+.vercel
+.env
+.env.*
+.env.local
+config.txt
+*.token
+*.pem
+*.key
+node_modules
+*.log
+.DS_Store
+.claude/

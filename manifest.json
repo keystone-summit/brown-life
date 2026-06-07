@@ -1,0 +1,24 @@
+{
+  "name": "Brown Life",
+  "short_name": "Brown Life",
+  "description": "Brown Life — Fortitudo · Honor · Impetus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0b10",
+  "theme_color": "#0b0b10",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%230b0b10'/><text x='50%25' y='64%25' text-anchor='middle' font-family='Georgia,serif' font-size='118' font-weight='700' fill='%23d4a44c'>B</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%230b0b10'/><text x='50%25' y='64%25' text-anchor='middle' font-family='Georgia,serif' font-size='320' font-weight='700' fill='%23d4a44c'>B</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

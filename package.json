@@ -1,0 +1,9 @@
+{
+  "name": "dblife",
+  "version": "0.1.0",
+  "private": true,
+  "description": "dblife — John's personal life dashboard (calendar, tasks, goals, supplements, AI). Phase 1 scaffold.",
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0b10" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="dblife" />
+<meta name="description" content="dblife — John's personal life dashboard" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%230b0b10'/><text x='50%25' y='62%25' text-anchor='middle' font-family='Georgia,serif' font-size='84' font-weight='700' fill='%23d4a44c'>db</text></svg>" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%230b0b10'/><text x='50%25' y='62%25' text-anchor='middle' font-family='serif' font-size='28' font-weight='700' fill='%23d4a44c'>db</text></svg>" />
+<title>dblife</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0b10;
+    --bg-soft: #14141c;
+    --bg-card: #1a1a24;
+    --bg-card-hover: #20202d;
+    --border: rgba(212,164,76,0.18);
+    --border-soft: rgba(255,255,255,0.06);
+    --text: #f4f1e8;
+    --text-soft: #b9b3a4;
+    --text-muted: #807a6d;
+    --amber: #d4a44c;
+    --amber-light: #ecc377;
+    --amber-deep: #a8852f;
+    --crimson: #c45a4a;
+    --green: #7ab07a;
+  }
+  html, body, #root { background: var(--bg); color: var(--text); min-height: 100vh; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-image:
+      radial-gradient(circle at 12% 10%, rgba(212,164,76,0.07) 0%, transparent 38%),
+      radial-gradient(circle at 88% 92%, rgba(196,90,74,0.05) 0%, transparent 42%);
+  }
+  .font-display  { font-family: 'Instrument Serif', Georgia, serif; }
+  .font-heraldic { font-family: 'Cinzel', Georgia, serif; letter-spacing: 0.12em; }
+  .text-amber { color: var(--amber); }
+  .text-amber-light { color: var(--amber-light); }
+  .text-soft { color: var(--text-soft); }
+  .text-muted { color: var(--text-muted); }
+  .bg-card { background: var(--bg-card); }
+  .bg-soft { background: var(--bg-soft); }
+  .border-amber-soft { border-color: var(--border); }
+  .border-soft { border-color: var(--border-soft); }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    transition: border-color .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover { border-color: var(--border); }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px -20px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.04) inset;
+  }
+
+  /* ===== Snapshot system ===== */
+  .snap {
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+    border: 1px solid var(--border-soft);
+    overflow: hidden;
+  }
+  .snap-os     { border-top: 3px solid #e87f3a; }
+  .snap-grif   { border-top: 3px solid #c9a44c; }
+  .snap-header {
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border-soft);
+    background: rgba(255,255,255,0.015);
+  }
+  .snap-title {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Cinzel', Georgia, serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .snap-dot { width: 10px; height: 10px; border-radius: 999px; }
+  .snap-dot-os   { background: #e87f3a; box-shadow: 0 0 12px rgba(232,127,58,0.5); }
+  .snap-dot-grif { background: #c9a44c; box-shadow: 0 0 12px rgba(201,164,76,0.5); }
+  .snap-body { padding: 16px 18px 18px; }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .kpi-tile {
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .kpi-tile:hover { border-color: var(--border); transform: translateY(-1px); }
+  .kpi-value {
+    font-size: 26px; font-weight: 700; line-height: 1.05;
+    color: var(--text);
+  }
+  .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 2px; }
+  .kpi-sub   { font-size: 11px; color: var(--text-soft); margin-top: 4px; min-height: 14px; }
+  .kpi-value-dim { color: var(--text-muted); }
+  .tone-red    { color: #e8806e !important; }
+  .tone-yellow { color: var(--amber-light) !important; }
+  .tone-green  { color: #93c993 !important; }
+
+  .open-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border-soft);
+    color: var(--text-soft);
+    background: transparent;
+    transition: all .15s ease;
+  }
+  .open-link:hover { border-color: var(--amber); color: var(--amber-light); background: rgba(212,164,76,0.05); }
+  .open-link-os:hover   { border-color: #e87f3a; color: #f0a472; background: rgba(232,127,58,0.06); }
+  .open-link-grif:hover { border-color: #c9a44c; color: #e0bd6a; background: rgba(201,164,76,0.06); }
+
+  /* ===== System Health strip ===== */
+  .health-strip {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    background: var(--bg-card);
+  }
+  .health-chip {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 11px; padding: 4px 10px 4px 8px; border-radius: 999px;
+    background: var(--bg-soft); border: 1px solid var(--border-soft);
+    color: var(--text-soft);
+  }
+  .health-chip .h-dot { width: 8px; height: 8px; border-radius: 999px; }
+  .h-green  { background: #7ab07a; }
+  .h-yellow { background: #d4a44c; }
+  .h-red    { background: #c45a4a; }
+  .h-unk    { background: #807a6d; }
+  .health-banner-red {
+    background: linear-gradient(90deg, rgba(196,90,74,0.18), rgba(196,90,74,0.08));
+    border: 1px solid rgba(196,90,74,0.4);
+    color: #f3b8ad;
+    padding: 10px 14px; border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', Georgia, serif;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border-soft), transparent);
+  }
+  .meta-stamp { font-size: 11px; color: var(--text-muted); }
+  .btn {
+    background: var(--amber);
+    color: #1a1409;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 8px 14px;
+    transition: background .15s ease;
+  }
+  .btn:hover { background: var(--amber-light); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 6px 12px;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .btn-ghost:hover { border-color: var(--border); color: var(--text); }
+  .input {
+    background: var(--bg-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    width: 100%;
+  }
+  .input:focus { outline: none; border-color: var(--amber); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 10px;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .nav-item:hover { background: var(--bg-card); color: var(--text); }
+  .nav-item.active { background: rgba(212,164,76,0.12); color: var(--amber-light); border: 1px solid var(--border); }
+  .progress-track { background: var(--bg-soft); border-radius: 999px; height: 8px; overflow: hidden; }
+  .progress-fill { background: linear-gradient(90deg, var(--amber-deep), var(--amber-light)); height: 100%; transition: width .25s ease; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .pill-low    { background: rgba(122,176,122,0.15); color: #93c993; }
+  .pill-medium { background: rgba(212,164,76,0.18);  color: var(--amber-light); }
+  .pill-high   { background: rgba(196,90,74,0.18);   color: #e8806e; }
+  .kanban-col { background: var(--bg-soft); border-radius: 14px; padding: 14px; min-height: 360px; }
+  .kanban-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 10px; padding: 12px; cursor: grab; }
+  .kanban-card:hover { border-color: var(--border); }
+  .kanban-card.dragging { opacity: 0.5; }
+  .kanban-col.drag-over { background: rgba(212,164,76,0.06); border: 1px dashed var(--amber); }
+  .cal-cell {
+    min-height: 86px; padding: 6px; border: 1px solid var(--border-soft); border-radius: 8px;
+    background: var(--bg-card); display: flex; flex-direction: column; gap: 4px;
+  }
+  .cal-cell.today { border-color: var(--amber); background: rgba(212,164,76,0.06); }
+  .cal-cell.dim { opacity: 0.35; }
+  .cal-event { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(212,164,76,0.18); color: var(--amber-light); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scroll-y { overflow-y: auto; }
+  .scroll-y::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scroll-y::-webkit-scrollbar-thumb { background: rgba(212,164,76,0.25); border-radius: 4px; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  .chat-bubble-user      { background: var(--amber); color: #1a1409; padding: 10px 14px; border-radius: 14px 14px 2px 14px; max-width: 80%; white-space: pre-wrap; }
+  .chat-bubble-assistant { background: var(--bg-card); border: 1px solid var(--border-soft); padding: 10px 14px; border-radius: 14px 14px 14px 2px; max-width: 80%; white-space: pre-wrap; }
+
+  @media (max-width: 768px) {
+    .sidebar { position: fixed; bottom: 0; left: 0; right: 0; flex-direction: row !important; overflow-x: auto; border-top: 1px solid var(--border-soft); padding: 8px !important; z-index: 50; width: 100% !important; }
+    .sidebar .nav-item { flex-direction: column; font-size: 10px; gap: 2px; padding: 6px 10px; white-space: nowrap; min-width: 64px; }
+    .sidebar .brand { display: none !important; }
+    .main { padding-bottom: 80px !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+const ICON = {
+  home:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>,
+  cal:       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  tasks:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+  goal:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  pill:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.5 20.5a7 7 0 1 1 9.9-9.9l-9.9 9.9z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>,
+  chat:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  link:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 1 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 1 0 7.07 7.07l1.72-1.72"/></svg>,
+  trash:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+  plus:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+};
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  const txt = await r.text();
+  let data; try { data = txt ? JSON.parse(txt) : {}; } catch { data = { error: txt }; }
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  return data;
+}
+
+function fmtDate(d, opts) {
+  if (!(d instanceof Date)) d = new Date(d);
+  return d.toLocaleDateString(undefined, opts || { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function isoDay(d) {
+  if (!(d instanceof Date)) d = new Date(d);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+}
+function sameDay(a, b) { return isoDay(a) === isoDay(b); }
+
+// ===================== PIN GATE =====================
+function PinGate({ onAuthed }) {
+  const [pin, setPin] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true); setErr('');
+    try {
+      await api('POST', '/api/auth', { pin });
+      onAuthed();
+    } catch (e) { setErr(e.message || 'Login failed'); setBusy(false); }
+  }
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <form onSubmit={submit} className="card p-8 max-w-sm w-full">
+        <h1 className="font-display text-4xl text-center mb-1 text-amber-light">dblife</h1>
+        <p className="text-muted text-center text-sm mb-6">Enter PIN to continue</p>
+        <input
+          autoFocus
+          type="password"
+          inputMode="numeric"
+          className="input text-center text-2xl tracking-widest"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          placeholder="••••••"
+        />
+        {err && <div className="text-sm mt-3 text-red-400 text-center">{err}</div>}
+        <button type="submit" disabled={busy} className="btn w-full mt-5">{busy ? 'Checking…' : 'Unlock'}</button>
+      </form>
+    </div>
+  );
+}
+
+// ===================== SNAPSHOT CARDS =====================
+function relTime(iso) {
+  if (!iso) return '';
+  const ageMs = Date.now() - new Date(iso).getTime();
+  const m = Math.round(ageMs / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60);
+  if (h < 24) return h + ' hr ago';
+  return Math.round(h / 24) + ' d ago';
+}
+
+function Tile({ tile, dim }) {
+  const tone = tile && tile.tone ? `tone-${tile.tone}` : '';
+  return (
+    <div className="kpi-tile">
+      <div className={`kpi-value ${dim ? 'kpi-value-dim' : ''} ${tone}`}>{tile && tile.value != null ? tile.value : '—'}</div>
+      <div className="kpi-label">{tile && tile.label || ''}</div>
+      <div className="kpi-sub">{tile && tile.sub || ''}</div>
+    </div>
+  );
+}
+
+function SnapshotCard({ flavor, title, dotClass, snap, openHref, openLabel }) {
+  const empty = !snap || snap.ok === false;
+  const t = snap && snap.tiles || {};
+  const tileKeys = flavor === 'os'
+    ? ['active_members', 'this_month_revenue', 'new_members_this_month', 'open_hiring_candidates', 'hiring_action_required', 'top_alert']
+    : ['days_to_attorney', 'acquisition_readiness', 'mrr', 'lessons_today', 'beta_codes_active', 'top_alert'];
+  const stamp = snap && snap.fetchedAt
+    ? `Last updated ${relTime(snap.fetchedAt)}${snap.cached ? ' · cached' : ''}`
+    : 'Loading…';
+
+  return (
+    <div className={`snap snap-${flavor === 'os' ? 'os' : 'grif'}`}>
+      <div className="snap-header">
+        <div className="snap-title">
+          <span className={`snap-dot snap-dot-${flavor === 'os' ? 'os' : 'grif'}`}></span>
+          <span>{title}</span>
+        </div>
+        <div className="meta-stamp">{stamp}</div>
+      </div>
+      <div className="snap-body space-y-3">
+        <div className="kpi-grid">
+          {tileKeys.map((k) => <Tile key={k} tile={t[k]} dim={empty || !t[k] || t[k].value === '—'} />)}
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <div className="text-xs text-muted">
+            {empty && snap && snap.error ? <span className="text-red-400">{snap.error}</span>
+              : (snap && Array.isArray(snap.missing) && snap.missing.length > 0)
+                ? <span>Missing: {snap.missing.join(', ')}</span>
+                : <span>&nbsp;</span>}
+          </div>
+          <a href={openHref} target="_blank" rel="noopener" className={`open-link ${flavor === 'os' ? 'open-link-os' : 'open-link-grif'}`}>
+            {openLabel} <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HealthStrip({ health }) {
+  const items = health && health.items || [];
+  return (
+    <div className="health-strip">
+      {items.length === 0
+        ? <span className="text-muted text-xs">Health unavailable.</span>
+        : items.map((it) => (
+          <div key={it.name} className="health-chip" title={`${it.url} · ${it.status_code != null ? it.status_code : 'err'} · ${it.response_time_ms != null ? it.response_time_ms + 'ms' : ''}`}>
+            <span className={`h-dot ${it.bucket === 'green' ? 'h-green' : it.bucket === 'yellow' ? 'h-yellow' : it.bucket === 'red' ? 'h-red' : 'h-unk'}`}></span>
+            <span>{it.name}</span>
+          </div>
+        ))}
+    </div>
+  );
+}
+
+// ===================== HOME / TODAY =====================
+function Home({ events, tasks, supps, todayLog, onTakeSupp, snapOs, snapGriffin, snapHealth }) {
+  const today = new Date();
+  const week = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+      const dayEvents = events.filter(e => sameDay(e.start_at, d));
+      return { date: d, events: dayEvents };
+    });
+  }, [events]);
+
+  const todayTasks = tasks.filter(t => t.status !== 'done' && t.due_date && isoDay(t.due_date) === isoDay(today));
+  const todayWorkoutEvent = events.find(e => sameDay(e.start_at, today) && /workout|gym|run|train/i.test(e.title || ''));
+  const takenIds = new Set(todayLog.map(l => l.supplement_id));
+  const dueSupps = supps.filter(s => !takenIds.has(s.id));
+
+  const healthRed = snapHealth && snapHealth.overall === 'red';
+  const redItems = healthRed ? (snapHealth.items || []).filter((i) => i.bucket === 'red') : [];
+
+  return (
+    <div className="space-y-8">
+      {healthRed && (
+        <div className="health-banner-red">
+          <span>⚠</span>
+          <span><strong>{redItems.length} dashboard{redItems.length === 1 ? '' : 's'} down:</strong> {redItems.map((i) => i.name).join(', ')}</span>
+        </div>
+      )}
+
+      <div>
+        <div className="text-xs uppercase tracking-[0.25em] text-muted">Family Command Center</div>
+        <h2 className="font-display text-4xl text-amber-light mt-1">Good morning, John.</h2>
+        <p className="text-muted text-sm mt-1">{fmtDate(today, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+      </div>
+
+      {/* Personal section */}
+      <section className="space-y-3">
+        <div className="section-title"><span>Today</span></div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="card card-lift p-5 lg:col-span-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Next 7 days</h3>
+              <span className="text-xs text-muted">{events.length} events total</span>
+            </div>
+            <div className="space-y-2">
+              {week.map((w, i) => (
+                <div key={i} className={`flex items-start gap-3 p-2 rounded-lg ${sameDay(w.date, today) ? 'bg-soft' : ''}`}>
+                  <div className="text-right w-14 shrink-0">
+                    <div className="text-amber font-semibold text-sm">{fmtDate(w.date, { weekday: 'short' })}</div>
+                    <div className="text-xl font-bold">{w.date.getDate()}</div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {w.events.length === 0 ? (
+                      <div className="text-muted text-sm italic pt-2">—</div>
+                    ) : w.events.map(e => (
+                      <div key={e.id} className="text-sm py-1">
+                        <span className="text-amber-light">●</span>{' '}
+                        <span className="font-medium">{e.title}</span>
+                        {!e.all_day && <span className="text-muted ml-2">{new Date(e.start_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="card card-lift p-5">
+              <h3 className="font-semibold mb-3">Today's tasks</h3>
+              {todayTasks.length === 0
+                ? <p className="text-muted text-sm">No tasks due today.</p>
+                : <ul className="space-y-2">{todayTasks.map(t => (
+                    <li key={t.id} className="flex items-center gap-2 text-sm">
+                      <span className={`pill pill-${t.priority}`}>{t.priority}</span>
+                      <span className="truncate">{t.title}</span>
+                    </li>
+                  ))}</ul>
+              }
+            </div>
+            <div className="card card-lift p-5">
+              <h3 className="font-semibold mb-3">Today's workout</h3>
+              {todayWorkoutEvent
+                ? <p className="text-sm">{todayWorkoutEvent.title} <span className="text-muted">{!todayWorkoutEvent.all_day && new Date(todayWorkoutEvent.start_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></p>
+                : <p className="text-muted text-sm">No workout scheduled.</p>}
+            </div>
+            <div className="card card-lift p-5">
+              <h3 className="font-semibold mb-3">Supplements due</h3>
+              {dueSupps.length === 0
+                ? <p className="text-soft text-sm">✓ All caught up today.</p>
+                : <ul className="space-y-2">{dueSupps.map(s => (
+                    <li key={s.id} className="flex items-center justify-between gap-2 text-sm">
+                      <span><span className="font-medium">{s.name}</span> <span className="text-muted">{s.dose}</span></span>
+                      <button className="btn-ghost text-xs" onClick={() => onTakeSupp(s.id)}>Take</button>
+                    </li>
+                  ))}</ul>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Business snapshots */}
+      <section className="space-y-3">
+        <div className="section-title"><span>Business Snapshots</span></div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <SnapshotCard
+            flavor="os"
+            title="OsteoStrong Village at Pine"
+            snap={snapOs}
+            openHref="https://osteostrong-exec.vercel.app"
+            openLabel="Open OS Exec"
+          />
+          <SnapshotCard
+            flavor="grif"
+            title="Griffin Hall"
+            snap={snapGriffin}
+            openHref="https://griffin-exec-dashboard.vercel.app"
+            openLabel="Open Griffin Exec"
+          />
+        </div>
+      </section>
+
+      {/* System health strip */}
+      <section className="space-y-3">
+        <div className="section-title"><span>System Health</span></div>
+        <HealthStrip health={snapHealth} />
+      </section>
+    </div>
+  );
+}
+
+// ===================== CALENDAR =====================
+function Calendar({ events, reload }) {
+  const [cursor, setCursor] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  const days = useMemo(() => {
+    const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+    const startDow = first.getDay();
+    const lastDay = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+    const cells = [];
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = new Date(cursor.getFullYear(), cursor.getMonth(), -i);
+      cells.push({ date: d, inMonth: false });
+    }
+    for (let i = 1; i <= lastDay; i++) cells.push({ date: new Date(cursor.getFullYear(), cursor.getMonth(), i), inMonth: true });
+    while (cells.length % 7 !== 0) {
+      const last = cells[cells.length - 1].date;
+      cells.push({ date: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1), inMonth: false });
+    }
+    return cells;
+  }, [cursor]);
+
+  function nudge(months) { setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + months, 1)); }
+  function eventsFor(d) { return events.filter(e => sameDay(e.start_at, d)); }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-3xl text-amber-light">{cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h2>
+        <div className="flex items-center gap-2">
+          <button className="btn-ghost" onClick={() => nudge(-1)}>‹ Prev</button>
+          <button className="btn-ghost" onClick={() => setCursor(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Today</button>
+          <button className="btn-ghost" onClick={() => nudge(1)}>Next ›</button>
+          <button className="btn flex items-center gap-1" onClick={() => { setEditing(null); setShowForm(true); }}>{ICON.plus} Event</button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-xs text-muted font-semibold uppercase tracking-wider px-1">
+        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => <div key={d} className="px-2">{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((c, i) => {
+          const isToday = sameDay(c.date, new Date());
+          const evs = eventsFor(c.date);
+          return (
+            <div key={i} className={`cal-cell ${isToday ? 'today' : ''} ${!c.inMonth ? 'dim' : ''}`}>
+              <div className={`text-xs font-semibold ${isToday ? 'text-amber' : 'text-soft'}`}>{c.date.getDate()}</div>
+              {evs.slice(0, 4).map(e => (
+                <div key={e.id} className="cal-event" onClick={() => { setEditing(e); setShowForm(true); }} title={e.title}>{e.title}</div>
+              ))}
+              {evs.length > 4 && <div className="text-[10px] text-muted">+{evs.length - 4} more</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {showForm && <EventForm initial={editing} onClose={() => { setShowForm(false); setEditing(null); }} onSaved={reload} />}
+    </div>
+  );
+}
+
+function EventForm({ initial, onClose, onSaved }) {
+  const isEdit = !!initial;
+  const init = initial || {};
+  const [title, setTitle] = useState(init.title || '');
+  const [desc, setDesc]   = useState(init.description || '');
+  const [start, setStart] = useState(init.start_at ? init.start_at.slice(0, 16) : new Date().toISOString().slice(0, 16));
+  const [end, setEnd]     = useState(init.end_at ? init.end_at.slice(0, 16) : '');
+  const [allDay, setAllDay] = useState(!!init.all_day);
+  const [busy, setBusy] = useState(false);
+
+  async function save(e) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const body = {
+        title, description: desc,
+        start_at: new Date(start).toISOString(),
+        end_at: end ? new Date(end).toISOString() : null,
+        all_day: allDay,
+      };
+      if (isEdit) await api('PATCH', `/api/events?id=${initial.id}`, body);
+      else        await api('POST',  '/api/events', body);
+      await onSaved(); onClose();
+    } catch (e) { alert(e.message); setBusy(false); }
+  }
+  async function del() {
+    if (!confirm('Delete this event?')) return;
+    setBusy(true);
+    try { await api('DELETE', `/api/events?id=${initial.id}`); await onSaved(); onClose(); }
+    catch (e) { alert(e.message); setBusy(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <form onClick={(e) => e.stopPropagation()} onSubmit={save} className="card p-6 max-w-md w-full space-y-3">
+        <h3 className="font-semibold text-lg">{isEdit ? 'Edit event' : 'New event'}</h3>
+        <input className="input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <textarea className="input" rows="2" placeholder="Notes" value={desc} onChange={(e) => setDesc(e.target.value)}></textarea>
+        <label className="text-xs text-muted">Start</label>
+        <input type="datetime-local" className="input" value={start} onChange={(e) => setStart(e.target.value)} required />
+        <label className="text-xs text-muted">End (optional)</label>
+        <input type="datetime-local" className="input" value={end} onChange={(e) => setEnd(e.target.value)} />
+        <label className="flex items-center gap-2 text-sm text-soft">
+          <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} /> All day
+        </label>
+        <div className="flex justify-between gap-2 pt-2">
+          {isEdit ? <button type="button" className="btn-ghost text-red-400" onClick={del} disabled={busy}>Delete</button> : <span />}
+          <div className="flex gap-2">
+            <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ===================== TASKS (KANBAN) =====================
+function Tasks({ tasks, reload }) {
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const dragId = useRef(null);
+
+  const cols = [
+    { key: 'todo',  label: 'To Do' },
+    { key: 'doing', label: 'Doing' },
+    { key: 'done',  label: 'Done'  },
+  ];
+
+  async function moveTo(taskId, status) {
+    await api('PATCH', `/api/tasks?id=${taskId}`, { status });
+    await reload();
+  }
+
+  async function del(id) {
+    if (!confirm('Delete task?')) return;
+    await api('DELETE', `/api/tasks?id=${id}`); await reload();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-3xl text-amber-light">Tasks</h2>
+        <button className="btn flex items-center gap-1" onClick={() => { setEditing(null); setShowForm(true); }}>{ICON.plus} Task</button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {cols.map(col => {
+          const items = tasks.filter(t => t.status === col.key);
+          return (
+            <div key={col.key}
+                 className={`kanban-col ${dragOver === col.key ? 'drag-over' : ''}`}
+                 onDragOver={(e) => { e.preventDefault(); setDragOver(col.key); }}
+                 onDragLeave={() => setDragOver(null)}
+                 onDrop={async (e) => {
+                   e.preventDefault();
+                   setDragOver(null);
+                   if (dragId.current) { await moveTo(dragId.current, col.key); dragId.current = null; }
+                 }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-soft">{col.label} <span className="text-muted text-xs ml-1">{items.length}</span></h3>
+              </div>
+              <div className="space-y-2">
+                {items.map(t => (
+                  <div key={t.id}
+                       className="kanban-card"
+                       draggable
+                       onDragStart={(e) => { dragId.current = t.id; e.currentTarget.classList.add('dragging'); }}
+                       onDragEnd={(e) => e.currentTarget.classList.remove('dragging')}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium">{t.title}</div>
+                        {t.notes && <div className="text-xs text-muted mt-1 line-clamp-2">{t.notes}</div>}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className={`pill pill-${t.priority}`}>{t.priority}</span>
+                          {t.due_date && <span className="text-xs text-muted">Due {fmtDate(t.due_date)}</span>}
+                          {(t.tags || []).map(tag => <span key={tag} className="text-xs text-muted">#{tag}</span>)}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button className="text-muted hover:text-amber" onClick={() => { setEditing(t); setShowForm(true); }} title="Edit">✎</button>
+                        <button className="text-muted hover:text-red-400" onClick={() => del(t.id)} title="Delete">{ICON.trash}</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {items.length === 0 && <div className="text-muted text-xs text-center py-6 italic">Drop tasks here</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {showForm && <TaskForm initial={editing} onClose={() => { setShowForm(false); setEditing(null); }} onSaved={reload} />}
+    </div>
+  );
+}
+
+function TaskForm({ initial, onClose, onSaved }) {
+  const isEdit = !!initial;
+  const init = initial || {};
+  const [title, setTitle] = useState(init.title || '');
+  const [notes, setNotes] = useState(init.notes || '');
+  const [status, setStatus] = useState(init.status || 'todo');
+  const [priority, setPriority] = useState(init.priority || 'medium');
+  const [due, setDue] = useState(init.due_date || '');
+  const [tags, setTags] = useState((init.tags || []).join(', '));
+  const [busy, setBusy] = useState(false);
+
+  async function save(e) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const body = {
+        title, notes, status, priority,
+        due_date: due || null,
+        tags: tags.split(',').map(s => s.trim()).filter(Boolean),
+      };
+      if (isEdit) await api('PATCH', `/api/tasks?id=${initial.id}`, body);
+      else        await api('POST',  '/api/tasks', body);
+      await onSaved(); onClose();
+    } catch (e) { alert(e.message); setBusy(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <form onClick={(e) => e.stopPropagation()} onSubmit={save} className="card p-6 max-w-md w-full space-y-3">
+        <h3 className="font-semibold text-lg">{isEdit ? 'Edit task' : 'New task'}</h3>
+        <input className="input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <textarea className="input" rows="3" placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)}></textarea>
+        <div className="grid grid-cols-2 gap-2">
+          <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="todo">To Do</option><option value="doing">Doing</option><option value="done">Done</option>
+          </select>
+          <select className="input" value={priority} onChange={(e) => setPriority(e.target.value)}>
+            <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
+          </select>
+        </div>
+        <input type="date" className="input" value={due} onChange={(e) => setDue(e.target.value)} />
+        <input className="input" placeholder="Tags (comma-separated)" value={tags} onChange={(e) => setTags(e.target.value)} />
+        <div className="flex justify-end gap-2 pt-2">
+          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ===================== GOALS =====================
+function Goals({ goals, reload }) {
+  const [showForm, setShowForm] = useState(false);
+
+  async function setProgress(g, p) {
+    await api('PATCH', `/api/goals?id=${g.id}`, { progress: p });
+    await reload();
+  }
+  async function addSub(gId, title) {
+    if (!title.trim()) return;
+    await api('POST', `/api/goals?id=${gId}&sub=1`, { title });
+    await reload();
+  }
+  async function toggleSub(s) {
+    await api('PATCH', `/api/goals?sub_id=${s.id}`, { done: !s.done });
+    await reload();
+  }
+  async function delGoal(id) {
+    if (!confirm('Delete goal and its subtasks?')) return;
+    await api('DELETE', `/api/goals?id=${id}`); await reload();
+  }
+  async function delSub(id) {
+    await api('DELETE', `/api/goals?sub_id=${id}`); await reload();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-3xl text-amber-light">Goals</h2>
+        <button className="btn flex items-center gap-1" onClick={() => setShowForm(true)}>{ICON.plus} Goal</button>
+      </div>
+      {goals.length === 0 && <p className="text-muted">No goals yet. Add one to get started.</p>}
+      <div className="space-y-4">
+        {goals.map(g => <GoalCard key={g.id} g={g} setProgress={setProgress} addSub={addSub} toggleSub={toggleSub} delGoal={delGoal} delSub={delSub} />)}
+      </div>
+      {showForm && <GoalForm onClose={() => setShowForm(false)} onSaved={reload} />}
+    </div>
+  );
+}
+
+function GoalCard({ g, setProgress, addSub, toggleSub, delGoal, delSub }) {
+  const [subText, setSubText] = useState('');
+  const subs = g.subtasks || [];
+  const doneCount = subs.filter(s => s.done).length;
+  return (
+    <div className="card p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-lg">{g.title}</h3>
+          {g.description && <p className="text-sm text-soft mt-1">{g.description}</p>}
+          {g.target_date && <p className="text-xs text-muted mt-1">Target: {fmtDate(g.target_date)}</p>}
+        </div>
+        <button className="text-muted hover:text-red-400" onClick={() => delGoal(g.id)}>{ICON.trash}</button>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <div className="progress-track flex-1"><div className="progress-fill" style={{ width: g.progress + '%' }}></div></div>
+        <input type="number" min="0" max="100" value={g.progress} onChange={(e) => setProgress(g, Math.max(0, Math.min(100, Number(e.target.value))))} className="input !w-16 !py-1 text-center" />
+        <span className="text-sm text-amber-light w-10 text-right">{g.progress}%</span>
+      </div>
+      <details className="mt-3">
+        <summary className="text-sm text-soft hover:text-amber">Subtasks ({doneCount}/{subs.length})</summary>
+        <div className="mt-2 space-y-1 pl-2">
+          {subs.map(s => (
+            <div key={s.id} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={s.done} onChange={() => toggleSub(s)} />
+              <span className={s.done ? 'line-through text-muted' : ''}>{s.title}</span>
+              <button className="ml-auto text-muted hover:text-red-400" onClick={() => delSub(s.id)}>×</button>
+            </div>
+          ))}
+          <form className="flex gap-2 mt-2" onSubmit={(e) => { e.preventDefault(); addSub(g.id, subText); setSubText(''); }}>
+            <input className="input !py-1 text-sm" placeholder="Add subtask…" value={subText} onChange={(e) => setSubText(e.target.value)} />
+            <button className="btn-ghost text-xs">Add</button>
+          </form>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function GoalForm({ onClose, onSaved }) {
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
+  const [target, setTarget] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [busy, setBusy] = useState(false);
+
+  async function save(e) {
+    e.preventDefault(); setBusy(true);
+    try {
+      await api('POST', '/api/goals', { title, description: desc, target_date: target || null, progress });
+      await onSaved(); onClose();
+    } catch (e) { alert(e.message); setBusy(false); }
+  }
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <form onClick={(e) => e.stopPropagation()} onSubmit={save} className="card p-6 max-w-md w-full space-y-3">
+        <h3 className="font-semibold text-lg">New goal</h3>
+        <input className="input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <textarea className="input" rows="2" placeholder="Description" value={desc} onChange={(e) => setDesc(e.target.value)}></textarea>
+        <label className="text-xs text-muted">Target date</label>
+        <input type="date" className="input" value={target} onChange={(e) => setTarget(e.target.value)} />
+        <label className="text-xs text-muted">Starting progress ({progress}%)</label>
+        <input type="range" min="0" max="100" value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="w-full" />
+        <div className="flex justify-end gap-2 pt-2">
+          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ===================== SUPPLEMENTS =====================
+function Supplements({ supps, todayLog, reload, take }) {
+  const [showForm, setShowForm] = useState(false);
+  const takenSet = new Set(todayLog.map(l => l.supplement_id));
+
+  async function del(id) {
+    if (!confirm('Remove this supplement? Log history is preserved.')) return;
+    await api('DELETE', `/api/supplements?id=${id}`); await reload();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-3xl text-amber-light">Supplements</h2>
+        <button className="btn flex items-center gap-1" onClick={() => setShowForm(true)}>{ICON.plus} Supplement</button>
+      </div>
+      {supps.length === 0 && <p className="text-muted">No supplements yet.</p>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {supps.map(s => {
+          const taken = takenSet.has(s.id);
+          const refillDays = s.refill_date ? Math.ceil((new Date(s.refill_date) - new Date()) / 86400000) : null;
+          return (
+            <div key={s.id} className="card p-4 flex items-start gap-3">
+              <button onClick={() => take(s.id)} className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center ${taken ? 'bg-amber text-black border-amber' : 'border-amber-soft text-amber-light'}`}>
+                {taken ? '✓' : '○'}
+              </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-semibold">{s.name}</h3>
+                  <button className="text-muted hover:text-red-400" onClick={() => del(s.id)}>{ICON.trash}</button>
+                </div>
+                <div className="text-sm text-soft">{s.dose} • {s.frequency}</div>
+                {s.brand && <div className="text-xs text-muted">{s.brand}</div>}
+                {s.refill_date && (
+                  <div className={`text-xs mt-1 ${refillDays < 7 ? 'text-red-400' : 'text-muted'}`}>
+                    Refill in {refillDays} days ({fmtDate(s.refill_date)})
+                  </div>
+                )}
+                {taken && <div className="text-xs text-amber-light mt-1">✓ Taken today</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {showForm && <SupplementForm onClose={() => setShowForm(false)} onSaved={reload} />}
+    </div>
+  );
+}
+
+function SupplementForm({ onClose, onSaved }) {
+  const [f, setF] = useState({ name: '', dose: '', frequency: 'every morning', brand: '', refill_date: '', notes: '' });
+  const [busy, setBusy] = useState(false);
+
+  async function save(e) {
+    e.preventDefault(); setBusy(true);
+    try {
+      await api('POST', '/api/supplements', { ...f, refill_date: f.refill_date || null });
+      await onSaved(); onClose();
+    } catch (e) { alert(e.message); setBusy(false); }
+  }
+  function up(k, v) { setF({ ...f, [k]: v }); }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <form onClick={(e) => e.stopPropagation()} onSubmit={save} className="card p-6 max-w-md w-full space-y-3">
+        <h3 className="font-semibold text-lg">New supplement</h3>
+        <input className="input" placeholder="Name (e.g. Vitamin D3)" value={f.name} onChange={(e) => up('name', e.target.value)} required />
+        <div className="grid grid-cols-2 gap-2">
+          <input className="input" placeholder="Dose (e.g. 5000 IU)" value={f.dose} onChange={(e) => up('dose', e.target.value)} />
+          <input className="input" placeholder="Brand" value={f.brand} onChange={(e) => up('brand', e.target.value)} />
+        </div>
+        <input className="input" placeholder="Frequency (e.g. every morning)" value={f.frequency} onChange={(e) => up('frequency', e.target.value)} />
+        <label className="text-xs text-muted">Refill date</label>
+        <input type="date" className="input" value={f.refill_date} onChange={(e) => up('refill_date', e.target.value)} />
+        <textarea className="input" rows="2" placeholder="Notes" value={f.notes} onChange={(e) => up('notes', e.target.value)}></textarea>
+        <div className="flex justify-end gap-2 pt-2">
+          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ===================== AI CHAT =====================
+function AiChat() {
+  const [sessionId] = useState(() => {
+    let s = localStorage.getItem('dblife_chat_session');
+    if (!s) { s = 'sess-' + Math.random().toString(36).slice(2, 10); localStorage.setItem('dblife_chat_session', s); }
+    return s;
+  });
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+  const endRef = useRef(null);
+
+  useEffect(() => {
+    api('GET', `/api/ai-chat?session_id=${encodeURIComponent(sessionId)}`).then(d => setMessages(d.messages || [])).catch(() => {});
+  }, [sessionId]);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  async function send(e) {
+    e.preventDefault();
+    if (!draft.trim() || busy) return;
+    const text = draft.trim();
+    setDraft(''); setBusy(true);
+    setMessages(m => [...m, { role: 'user', content: text, created_at: new Date().toISOString() }]);
+    try {
+      const d = await api('POST', '/api/ai-chat', { session_id: sessionId, message: text });
+      setMessages(m => [...m, { role: 'assistant', content: d.reply, created_at: new Date().toISOString() }]);
+    } catch (e) {
+      setMessages(m => [...m, { role: 'assistant', content: 'Error: ' + e.message, created_at: new Date().toISOString() }]);
+    } finally { setBusy(false); }
+  }
+  function newSession() {
+    localStorage.removeItem('dblife_chat_session');
+    location.reload();
+  }
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-180px)] md:h-[calc(100vh-100px)]">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-display text-3xl text-amber-light">AI Assistant</h2>
+        <button className="btn-ghost text-xs" onClick={newSession}>New conversation</button>
+      </div>
+      <div className="card p-4 flex-1 scroll-y space-y-3">
+        {messages.length === 0 && <p className="text-muted text-center mt-10">Start a conversation. Powered by Claude.</p>}
+        {messages.map((m, i) => (
+          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}>{m.content}</div>
+          </div>
+        ))}
+        {busy && <div className="flex justify-start"><div className="chat-bubble-assistant text-muted italic">Thinking…</div></div>}
+        <div ref={endRef}></div>
+      </div>
+      <form onSubmit={send} className="flex gap-2 mt-3">
+        <input className="input flex-1" placeholder="Ask anything…" value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
+        <button type="submit" className="btn" disabled={busy || !draft.trim()}>Send</button>
+      </form>
+    </div>
+  );
+}
+
+// ===================== QUICK LINKS =====================
+function QuickLinks() {
+  const groups = [
+    {
+      heading: 'OsteoStrong',
+      accent: '#e87f3a',
+      cards: [
+        { title: 'OS Executive Dashboard',  url: 'https://osteostrong-exec.vercel.app',          desc: 'KPIs, goals, AR & member stats for the studio' },
+        { title: 'OS Coach Dashboard',      url: 'https://osteostrong-coach-mockup.vercel.app',  desc: 'Day-of coach workflow, session list, REMS/LIMFA' },
+        { title: 'OS Financial Dashboard',  url: 'https://osteostrong-dashboard.vercel.app',     desc: 'Revenue, AR, payroll, owner loans' },
+        { title: 'OS Hiring Dashboard',     url: 'https://osteostrong-hiring.vercel.app',        desc: 'Coach hiring funnel, candidates, interviews' },
+        { title: 'OS LIMFA Dashboard',      url: 'https://osteostrong-limfa-dashboard.vercel.app', desc: 'LIMFA protocols, sessions, sales' },
+      ],
+    },
+    {
+      heading: 'Griffin',
+      accent: '#c9a44c',
+      cards: [
+        { title: 'Griffin Executive Dashboard', url: 'https://griffin-exec-dashboard.vercel.app', desc: 'Griffin-side ops, board, and pipeline' },
+        { title: 'Griffin Hall',                url: 'https://griffin-hall.vercel.app',           desc: 'Hall of curiosities — War, Logic, Wealth, more' },
+      ],
+    },
+    {
+      heading: 'Coming soon',
+      accent: 'var(--text-muted)',
+      cards: [
+        { title: 'Health (Phase 2)',    desc: 'Workout, Meals, Nutrition, Supplements deep tracking', placeholder: true },
+        { title: 'Financial (Phase 3)', desc: 'Bank accounts via Plaid, precious-metals tracker, Budget', placeholder: true },
+      ],
+    },
+  ];
+  return (
+    <div className="space-y-6">
+      <h2 className="font-display text-3xl text-amber-light">Quick Links</h2>
+      {groups.map((g) => (
+        <div key={g.heading} className="space-y-3">
+          <div className="section-title"><span>{g.heading}</span></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {g.cards.map(c => c.placeholder ? (
+              <div key={c.title} className="card p-5 opacity-60">
+                <div className="text-xs uppercase tracking-wide text-muted mb-1">Coming soon</div>
+                <h3 className="font-semibold">{c.title}</h3>
+                <p className="text-sm text-muted mt-1">{c.desc}</p>
+              </div>
+            ) : (
+              <a key={c.title} href={c.url} target="_blank" rel="noopener" className="card card-lift p-5 block">
+                <div className="w-10 h-1 rounded mb-3" style={{ background: g.accent }}></div>
+                <h3 className="font-semibold">{c.title}</h3>
+                <p className="text-sm text-soft mt-1">{c.desc}</p>
+                <p className="text-xs text-muted mt-3 truncate">{c.url.replace(/^https?:\/\//, '')} →</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ===================== APP SHELL =====================
+function App() {
+  const [authed, setAuthed]   = useState(null);
+  const [tab, setTab]         = useState('home');
+  const [events, setEvents]   = useState([]);
+  const [tasks, setTasks]     = useState([]);
+  const [goals, setGoals]     = useState([]);
+  const [supps, setSupps]     = useState([]);
+  const [todayLog, setLog]    = useState([]);
+  const [snapOs, setSnapOs]   = useState(null);
+  const [snapGriffin, setSnapGriffin] = useState(null);
+  const [snapHealth, setSnapHealth]   = useState(null);
+
+  useEffect(() => {
+    api('GET', '/api/auth').then(d => setAuthed(!!d.authed)).catch(() => setAuthed(false));
+  }, []);
+
+  const reload = useCallback(async () => {
+    if (!authed) return;
+    const today = new Date();
+    const from  = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString();
+    const to    = new Date(today.getFullYear(), today.getMonth() + 2, 1).toISOString();
+    try {
+      const [e, t, g, s] = await Promise.all([
+        api('GET', `/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+        api('GET', '/api/tasks'),
+        api('GET', '/api/goals'),
+        api('GET', '/api/supplements'),
+      ]);
+      setEvents(e.events || []);
+      setTasks(t.tasks || []);
+      setGoals(g.goals || []);
+      setSupps(s.supplements || []);
+      setLog(s.today_log || []);
+    } catch (err) { console.error(err); }
+  }, [authed]);
+
+  useEffect(() => { if (authed) reload(); }, [authed, reload]);
+
+  // Snapshot pulls — independent of personal reload(), and refreshed
+  // every 5 min on a warm tab. Cache lives server-side (15 min) so a
+  // foreground refresh is cheap; the 5-min interval just keeps the
+  // "Last updated X min ago" stamp honest.
+  useEffect(() => {
+    if (!authed) return;
+    let alive = true;
+    const pull = async () => {
+      try {
+        const [o, g, h] = await Promise.all([
+          api('GET', '/api/snapshot-os').catch(() => null),
+          api('GET', '/api/snapshot-griffin').catch(() => null),
+          api('GET', '/api/snapshot-health').catch(() => null),
+        ]);
+        if (!alive) return;
+        if (o) setSnapOs(o);
+        if (g) setSnapGriffin(g);
+        if (h) setSnapHealth(h);
+      } catch {}
+    };
+    pull();
+    const iv = setInterval(pull, 5 * 60 * 1000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [authed]);
+
+  async function takeSupp(id) {
+    await api('POST', `/api/supplements?id=${id}&take=1`);
+    await reload();
+  }
+  async function logout() {
+    await api('DELETE', '/api/auth');
+    setAuthed(false);
+  }
+
+  if (authed === null) {
+    return <div className="min-h-screen flex items-center justify-center text-muted">Loading…</div>;
+  }
+  if (!authed) return <PinGate onAuthed={() => setAuthed(true)} />;
+
+  const tabs = [
+    { key: 'home',  label: 'Today',     icon: ICON.home },
+    { key: 'cal',   label: 'Calendar',  icon: ICON.cal  },
+    { key: 'tasks', label: 'Tasks',     icon: ICON.tasks },
+    { key: 'goals', label: 'Goals',     icon: ICON.goal },
+    { key: 'supp',  label: 'Supplements', icon: ICON.pill },
+    { key: 'chat',  label: 'AI Chat',   icon: ICON.chat },
+    { key: 'links', label: 'Links',     icon: ICON.link },
+  ];
+
+  return (
+    <div className="flex min-h-screen">
+      <aside className="sidebar w-56 shrink-0 p-5 flex flex-col gap-2 border-r border-soft">
+        <div className="brand mb-4">
+          <h1 className="font-display text-3xl text-amber-light">dblife</h1>
+          <p className="text-xs text-muted">John's personal dashboard</p>
+        </div>
+        {tabs.map(t => (
+          <div key={t.key} className={`nav-item ${tab === t.key ? 'active' : ''}`} onClick={() => setTab(t.key)}>
+            {t.icon}<span>{t.label}</span>
+          </div>
+        ))}
+        <div className="brand mt-auto pt-4">
+          <button className="btn-ghost w-full text-sm" onClick={logout}>Sign out</button>
+        </div>
+      </aside>
+
+      <main className="main flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
+        {tab === 'home'  && <Home events={events} tasks={tasks} supps={supps} todayLog={todayLog} onTakeSupp={takeSupp} snapOs={snapOs} snapGriffin={snapGriffin} snapHealth={snapHealth} />}
+        {tab === 'cal'   && <Calendar events={events} reload={reload} />}
+        {tab === 'tasks' && <Tasks tasks={tasks} reload={reload} />}
+        {tab === 'goals' && <Goals goals={goals} reload={reload} />}
+        {tab === 'supp'  && <Supplements supps={supps} todayLog={todayLog} reload={reload} take={takeSupp} />}
+        {tab === 'chat'  && <AiChat />}
+        {tab === 'links' && <QuickLinks />}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
