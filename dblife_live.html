@@ -366,7 +366,7 @@ function SnapshotCard({ flavor, title, dotClass, snap, openHref, openLabel }) {
                 ? <span>Missing: {snap.missing.join(', ')}</span>
                 : <span>&nbsp;</span>}
           </div>
-          <a href={openHref} target="_blank" rel="noopener" className={`open-link ${flavor === 'os' ? 'open-link-os' : 'open-link-grif'}`}>
+          <a href={openHref} target="_blank" rel="noopener noreferrer" className={`open-link ${flavor === 'os' ? 'open-link-os' : 'open-link-grif'}`}>
             {openLabel} <span aria-hidden="true">→</span>
           </a>
         </div>
@@ -1073,7 +1073,7 @@ function QuickLinks() {
                 <p className="text-sm text-muted mt-1">{c.desc}</p>
               </div>
             ) : (
-              <a key={c.title} href={c.url} target="_blank" rel="noopener" className="card card-lift p-5 block">
+              <a key={c.title} href={c.url} target="_blank" rel="noopener noreferrer" className="card card-lift p-5 block">
                 <div className="w-10 h-1 rounded mb-3" style={{ background: g.accent }}></div>
                 <h3 className="font-semibold">{c.title}</h3>
                 <p className="text-sm text-soft mt-1">{c.desc}</p>

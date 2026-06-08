@@ -24,7 +24,7 @@ const OS_EXEC = 'https://osteostrong-exec.vercel.app';
 const EXTRA = [
   { name: 'griffin_hall', url: 'https://griffin-hall-gules.vercel.app/' },
   { name: 'griffin_exec', url: 'https://griffin-exec.vercel.app/' },
-  { name: 'dblife',       url: 'https://dblife.vercel.app/' },
+  { name: 'brown_life',   url: 'https://brown-life.vercel.app/' },
 ];
 
 // Fallback ping targets for the OS-side dashboards. Only used when the
