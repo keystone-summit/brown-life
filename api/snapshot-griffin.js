@@ -11,8 +11,8 @@ const { requireAuth } = require('./_lib/auth');
 const { withCache } = require('./_lib/cache');
 
 const TTL_MS         = 15 * 60 * 1000;
-const GRIFFIN_EXEC   = 'https://griffin-exec-dashboard.vercel.app';
-const GRIFFIN_HALL   = 'https://griffin-hall.vercel.app';
+const GRIFFIN_EXEC   = 'https://griffin-exec.vercel.app';
+const GRIFFIN_HALL   = 'https://griffin-hall-gules.vercel.app';
 const ATTORNEY_DATE  = '2026-06-03';
 
 module.exports = async function handler(req, res) {

@@ -22,8 +22,8 @@ const TTL_MS = 5 * 60 * 1000;
 const OS_EXEC = 'https://osteostrong-exec.vercel.app';
 
 const EXTRA = [
-  { name: 'griffin_hall', url: 'https://griffin-hall.vercel.app/' },
-  { name: 'griffin_exec', url: 'https://griffin-exec-dashboard.vercel.app/' },
+  { name: 'griffin_hall', url: 'https://griffin-hall-gules.vercel.app/' },
+  { name: 'griffin_exec', url: 'https://griffin-exec.vercel.app/' },
   { name: 'dblife',       url: 'https://dblife.vercel.app/' },
 ];
 
