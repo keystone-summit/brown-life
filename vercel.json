@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "ignoreCommand": "node tests/auth-no-backdoors.test.js && exit 1 || exit 0",
   "headers": [
     {
       "source": "/(.*)",
