@@ -8,43 +8,47 @@
 //      The PIN itself identifies WHICH user is signing in — there is no user
 //      picker on the gate.
 //
-// Default users / PINs (override in Vercel without code changes):
-//   "D" (1111) — env: BROWNLIFE_PIN_HASH_JOHN / BROWNLIFE_PIN_JOHN / BROWNLIFE_USER1_NAME
-//   "K" (2222) — env: BROWNLIFE_PIN_HASH_LISA / BROWNLIFE_PIN_LISA / BROWNLIFE_USER2_NAME
+// Users (PINs are owner-set; NONE ship in code — this repo is public):
+//   "D" — DB row in dblife_auth_users, or owner env BROWNLIFE_PIN_HASH_JOHN / BROWNLIFE_PIN_JOHN; name BROWNLIFE_USER1_NAME
+//   "K" — DB row in dblife_auth_users, or owner env BROWNLIFE_PIN_HASH_LISA / BROWNLIFE_PIN_LISA; name BROWNLIFE_USER2_NAME
 // NOTE: the internal user ids stay 'john'/'lisa' (opaque keys the user never
 // sees) so existing per-user data keeps its owner; only the display NAME is D/K.
 // PIN-hash format: scrypt$<saltHex>$<hashHex>. Generate with:
 //   node -e "const c=require('crypto');const s=c.randomBytes(16);console.log('scrypt$'+s.toString('hex')+'$'+c.scryptSync(process.argv[1],s,32).toString('hex'))" <NEWPIN>
 //
-// Session signing key: BROWNLIFE_AUTH_SECRET (falls back to DBLIFE_AUTH_SECRET
-// for continuity). The PIN system is governed only by the BROWNLIFE_ vars.
+// Session signing key: BROWNLIFE_AUTH_SECRET, REQUIRED. There is no fallback.
+//
+// 🔒 DENY BY DEFAULT (2026-09-12). This file lives in a PUBLIC repo. It used to
+// carry (a) hashes of the documented default PINs, used whenever the DB read
+// failed, and (b) a literal fallback session secret used when the env var was
+// unset. Either one let a stranger in without the owner's secret, and (a)
+// quietly resurrected the defaults even after a user had changed their PIN.
+// Both are gone:
+//   * no DB row and no owner-set env hash  -> nobody signs in (fail CLOSED)
+//   * no BROWNLIFE_AUTH_SECRET             -> no session verifies, none issues
+// Guarded by tests/auth-no-backdoors.test.js (CI + the vercel.json build gate).
 
 const crypto = require('crypto');
 const { supaSelect, supaInsert, supaPatch } = require('./supa');
 
 const AUTH_TABLE = 'dblife_auth_users';
 
-const SECRET = process.env.BROWNLIFE_AUTH_SECRET
-  || process.env.DBLIFE_AUTH_SECRET
-  || 'dev-secret-change-me';
+// Empty when unset: sign() then refuses, so nothing verifies and nothing issues.
+const SECRET = process.env.BROWNLIFE_AUTH_SECRET || '';
 const COOKIE = 'brownlife_auth';
 const TTL_MS = 60 * 60 * 1000; // 1 hour; rotated on every login
-
-// scrypt hashes of the default PINs (6-digit since 2026-06-07: 111111 / 222222).
-const DEFAULT_HASH_JOHN = 'scrypt$15a6da5d7c1aee4eafe6dce3dec5e99e$ea491356ebfa43d0f0990296117c5f45a1724117658970b6c722cb30499985ac';
-const DEFAULT_HASH_LISA = 'scrypt$95f54acacb727e93b53cca13369be890$e1dc3d15bf847e6d400051d90d84d5d3270b7d28a7000289f1de0e2c6ca8aff0';
 
 const USERS = [
   {
     id: 'john',
     name:     process.env.BROWNLIFE_USER1_NAME || 'D',
-    pinHash:  process.env.BROWNLIFE_PIN_HASH_JOHN || DEFAULT_HASH_JOHN,
+    pinHash:  process.env.BROWNLIFE_PIN_HASH_JOHN || '',
     pinPlain: process.env.BROWNLIFE_PIN_JOHN || '',
   },
   {
     id: 'lisa',
     name:     process.env.BROWNLIFE_USER2_NAME || 'K',
-    pinHash:  process.env.BROWNLIFE_PIN_HASH_LISA || DEFAULT_HASH_LISA,
+    pinHash:  process.env.BROWNLIFE_PIN_HASH_LISA || '',
     pinPlain: process.env.BROWNLIFE_PIN_LISA || '',
   },
 ];
@@ -53,14 +57,19 @@ function b64url(buf) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// Returns null when no signing secret is configured — callers treat that as
+// "no valid session", never as "sign with something else".
 function sign(payload) {
+  if (!SECRET) return null;
   return b64url(crypto.createHmac('sha256', SECRET).update(payload).digest());
 }
 
 function makeCookie(userId) {
   const exp = new Date(Date.now() + TTL_MS).toISOString();
   const payload = `${userId}.${exp}`;   // userId has no '.', exp's ms-dot is fine
-  return `${payload}.${sign(payload)}`;
+  const sig = sign(payload);
+  if (!sig) throw new Error('BROWNLIFE_AUTH_SECRET is not set; refusing to issue a session.');
+  return `${payload}.${sig}`;
 }
 
 // Returns { userId, name } if the cookie is valid + unexpired + a known user.
@@ -73,7 +82,7 @@ function parseSession(req) {
   const payload = val.slice(0, idx);
   const sig = val.slice(idx + 1);
   const expected = sign(payload);
-  if (sig.length !== expected.length) return null;
+  if (!expected || sig.length !== expected.length) return null;
   try {
     if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   } catch { return null; }
@@ -136,7 +145,8 @@ function clearAuthCookie(res) {
 }
 
 // Verify a PIN against a stored scrypt hash (scrypt$<saltHex>$<hashHex>),
-// constant-time. Returns false on any malformed input.
+// constant-time. Returns false on any malformed input — including the empty
+// string an unset owner env hash produces.
 function verifyScrypt(pin, stored) {
   const parts = String(stored).split('$');
   if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
@@ -159,16 +169,19 @@ function makeScryptHash(pin) {
   return `scrypt$${salt.toString('hex')}$${hash.toString('hex')}`;
 }
 
-// The env-var-derived hash for a user (the fallback / bootstrap source).
-// A plaintext override (BROWNLIFE_PIN_*) is converted to a scrypt hash so the
-// whole pipeline is uniformly hash-based.
+// The owner-set env hash for a user — '' when the owner has set none, which is
+// the normal case. A plaintext override (BROWNLIFE_PIN_*) is converted to a
+// scrypt hash so the whole pipeline is uniformly hash-based.
 function envHashFor(u) {
   return u.pinPlain ? makeScryptHash(u.pinPlain) : u.pinHash;
 }
 
-// Effective PIN hash per user: env baseline overlaid with the DB row when one
-// exists. Fail-open to env on any DB error so a Supabase blip never locks
-// anyone out (the PIN itself is always still required).
+// Effective PIN hash per user: the owner-set env hash (usually empty) overlaid
+// with the DB row when one exists. On a DB error only the owner-set env hash
+// survives — and with none set, NOBODY can sign in. That is deliberate: the old
+// fallback here was a pair of published default hashes, so a Supabase blip
+// silently reopened the public PINs. A brief lockout during a Hub outage is the
+// price of never failing open.
 async function loadPinHashes() {
   const map = {};
   for (const u of USERS) map[u.id] = envHashFor(u);
@@ -177,7 +190,7 @@ async function loadPinHashes() {
     if (Array.isArray(rows)) {
       for (const r of rows) if (r && r.id && r.pin_hash) map[r.id] = r.pin_hash;
     }
-  } catch { /* fail-open: keep env baseline */ }
+  } catch { /* fail closed: only an owner-set env hash (if any) survives */ }
   return map;
 }
 
@@ -194,18 +207,21 @@ async function identifyPin(input) {
   return match;
 }
 
-// Bootstrap a user's DB row from the env hash on first login after deploy.
-// insert-if-missing: never overwrites a user-chosen PIN. Non-fatal.
+// Bootstrap a user's DB row from the owner-set env hash on first login after
+// deploy. insert-if-missing: never overwrites a user-chosen PIN, and never
+// writes an empty hash when no owner env hash is set. Non-fatal.
 async function seedPinIfMissing(userId) {
   const u = USERS.find((x) => x.id === userId);
   if (!u) return;
+  const seed = envHashFor(u);
+  if (!seed) return;
   try {
     const rows = await supaSelect(AUTH_TABLE, `id=eq.${encodeURIComponent(userId)}&select=id&limit=1`);
     if (rows && rows[0]) return;
     await supaInsert(AUTH_TABLE, {
-      id: userId, name: u.name, pin_hash: envHashFor(u), updated_at: new Date().toISOString(),
+      id: userId, name: u.name, pin_hash: seed, updated_at: new Date().toISOString(),
     }, { returning: false });
-  } catch { /* non-fatal: env fallback still authoritative */ }
+  } catch { /* non-fatal: the DB row, once present, is authoritative */ }
 }
 
 // Change a user's PIN. Re-verifies the CURRENT pin against the effective hash,

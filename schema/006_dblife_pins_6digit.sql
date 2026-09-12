@@ -1,21 +1,18 @@
 -- =====================================================================
--- dblife / Brown Life — migrate PINs from 4-digit to 6-digit (migration 006)
+-- dblife / Brown Life — migration 006 (NEUTRALISED 2026-09-12)
 --
--- John standardised on 6-digit PINs across all his apps (2026-06-07):
---   D (id 'john')  1111 -> 111111
---   K (id 'lisa')  2222 -> 222222
---
--- dblife_auth_users is authoritative (it overlays the env fallback), so we
--- upsert both rows with fresh scrypt hashes of the 6-digit PINs. This also
--- overwrites D's existing 4-digit row. The matching 6-digit hashes are mirrored
--- into _lib/auth.js (DEFAULT_HASH_JOHN/LISA) so the env fallback agrees if the
--- DB is ever unreachable. Salts differ per copy — both verify the same PIN.
--- Idempotent.
+-- Originally applied 2026-06-07: moved both users to 6-digit PINs by
+-- UPSERTING fixed scrypt hashes into dblife_auth_users with
+-- "on conflict do update". In a PUBLIC repo that was two holes:
+--   * the header listed the PINs in plaintext, and
+--   * re-running it (it was marked idempotent) would RESET every PIN —
+--     including one a user had since changed in the app — back to the
+--     published values.
+-- The original run's effect is already in the database, so the statement is
+-- replaced with a no-op. The PIN values and hashes are gone from HEAD; they
+-- remain in git history, which is why both PINs must be changed in the app
+-- (Settings -> Change my PIN). Guarded by tests/auth-no-backdoors.test.js:
+-- no migration may write a pin_hash.
 -- =====================================================================
 
-insert into dblife_auth_users (id, name, pin_hash, updated_at) values
-  ('john', 'D', 'scrypt$15a6da5d7c1aee4eafe6dce3dec5e99e$ea491356ebfa43d0f0990296117c5f45a1724117658970b6c722cb30499985ac', now()),
-  ('lisa', 'K', 'scrypt$95f54acacb727e93b53cca13369be890$e1dc3d15bf847e6d400051d90d84d5d3270b7d28a7000289f1de0e2c6ca8aff0', now())
-on conflict (id) do update
-  set pin_hash = excluded.pin_hash,
-      updated_at = excluded.updated_at;
+select 1; -- intentionally does nothing

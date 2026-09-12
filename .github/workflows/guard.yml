@@ -1,0 +1,30 @@
+name: Guard — auth has no backdoors
+
+# 🔒 Locked 2026-09-12. This repo is PUBLIC, so anything that lets someone into
+# Brown Life without the owner's secret is readable by the whole internet.
+# Fails the check if a default PIN, a hardcoded session secret, or a
+# PIN-resetting migration ever comes back. See tests/auth-no-backdoors.test.js.
+#
+# This is a visible red check, not the deploy gate: Vercel's git integration
+# deploys on push regardless of Actions. The hard gate is vercel.json
+# `ignoreCommand`, which runs the same test inside the Vercel build.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Auth has no backdoors
+        run: node tests/auth-no-backdoors.test.js
