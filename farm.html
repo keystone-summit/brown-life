@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#14161B">
+<title>Farm — Command Deck</title>
+<!--
+  The Farm — John's design, kept as supplied (palette, fonts, cards).
+  This repo is PUBLIC: this file is only a renderer. Every word of the plan,
+  and his listings / checklist / doc link, comes from /api/farm (John only,
+  server-side in Supabase), so it follows him between phone and desktop.
+  Guarded by tests/farm.test.js.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14161B; --panel:#1C1F27; --panel-2:#22262F;
+    --line:#2D323E; --text:#E9E5DB; --muted:#888E9C; --muted-2:#5E6470;
+    --gold:#C9A24B; --gold-dim:#8a6f34; --go:#74A98C; --alert:#C97B63;
+    --field:#6F8F5A; --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--ink);}
+  body{font-family:'IBM Plex Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;
+    padding:18px 14px 60px;max-width:560px;margin:0 auto;
+    background-image:radial-gradient(circle at 50% 0%,#1d212b 0%,var(--ink) 60%);}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:27px;line-height:1.1;}
+  h2{font-family:'Fraunces',serif;font-weight:500;font-size:19px;margin-bottom:10px;}
+  .mast{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px;}
+  .mast-sub{color:var(--muted);font-size:13px;margin-top:6px;}
+  .phase{display:flex;gap:10px;align-items:center;margin-top:12px;}
+  .phase b{color:var(--gold);font-weight:500;}
+  .count{font-size:32px;font-family:'Fraunces',serif;color:var(--text);line-height:1;}
+  .count small{font-size:12px;color:var(--muted);font-family:'IBM Plex Sans',sans-serif;margin-left:6px;}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+  .nums{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .num{background:var(--panel-2);border-radius:10px;padding:10px 12px;}
+  .num .v{font-family:'Fraunces',serif;font-size:20px;}
+  .num .k{font-size:12px;color:var(--muted);margin-top:2px;}
+  .county{margin-bottom:12px;}
+  .county h3{font-size:14px;font-weight:600;margin-bottom:6px;}
+  .county h3 span{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px;}
+  .links{display:flex;flex-wrap:wrap;gap:6px;}
+  .links a{font-size:12px;padding:6px 10px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--text);text-decoration:none;}
+  .links a:hover,.links a:focus-visible{border-color:var(--gold);outline:none;}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px;}
+  input,select{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:8px;
+    padding:9px 10px;font-family:inherit;font-size:14px;}
+  input:focus,select:focus{outline:none;border-color:var(--gold);}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  button{font-family:inherit;font-size:14px;padding:10px 14px;border-radius:9px;border:1px solid var(--gold-dim);
+    background:transparent;color:var(--gold);cursor:pointer;margin-top:12px;}
+  button:hover,button:focus-visible{background:var(--gold);color:var(--ink);outline:none;}
+  button.small{padding:4px 8px;font-size:12px;margin:0;border-color:var(--line);color:var(--muted);}
+  .list{margin-top:14px;}
+  .item{border-top:1px solid var(--line);padding:10px 0;display:grid;grid-template-columns:1fr auto;gap:8px;}
+  .item .t{font-weight:600;font-size:14px;}
+  .item .t a{color:var(--text);text-decoration:none;border-bottom:1px solid var(--gold-dim);}
+  .item .m{font-size:12px;color:var(--muted);margin-top:3px;}
+  .score{font-family:'Fraunces',serif;font-size:22px;color:var(--gold);text-align:right;}
+  .score small{display:block;font-size:10px;color:var(--muted);font-family:'IBM Plex Sans',sans-serif;}
+  .empty{color:var(--muted-2);font-size:13px;padding:10px 0;}
+  ul.checks{list-style:none;}
+  ul.checks li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line);font-size:14px;}
+  ul.checks li:first-child{border-top:0;}
+  ul.checks input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--gold);}
+  ul.checks li.done span{color:var(--muted-2);text-decoration:line-through;}
+  .course{display:grid;grid-template-columns:78px 1fr;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px;}
+  .course:first-child{border-top:0;}
+  .course .when{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .course.now .when{color:var(--go);}
+  .note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;}
+  .doc{display:flex;gap:8px;align-items:center;}
+  .doc input{flex:1;}
+  .doc a{white-space:nowrap;color:var(--gold);font-size:13px;text-decoration:none;}
+  @media (prefers-reduced-motion:no-preference){button{transition:background .15s,color .15s;}}
+  /* Brown Life additions, same tokens: way back to the deck, sign-in/lock notice, save errors. */
+  [hidden]{display:none!important;}
+  .back{display:inline-block;color:var(--muted);font-size:13px;text-decoration:none;margin-bottom:12px;}
+  .back:hover,.back:focus-visible{color:var(--gold);outline:none;}
+  .gate a{color:var(--gold);text-decoration:none;}
+  .flash{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);width:calc(100% - 28px);max-width:532px;
+    background:var(--panel-2);border:1px solid var(--alert);color:var(--text);border-radius:10px;padding:10px 12px;font-size:13px;}
+</style>
+</head>
+<body>
+
+<a class="back" href="/">← Brown Life</a>
+
+<header class="mast">
+  <h1 id="title">The Farm</h1>
+  <div class="mast-sub" id="tagline"></div>
+  <div class="phase" id="phase" hidden>
+    <div><span class="count" id="days">—</span><small id="countLabel"></small></div>
+  </div>
+  <div class="mast-sub" id="phaseLine" style="margin-top:8px" hidden>Phase now: <b id="phaseLabel"></b> <span id="phaseText"></span></div>
+</header>
+
+<section class="gate" id="gate">
+  <h2 id="gateTitle">Loading…</h2>
+  <div class="mast-sub" id="gateMsg"></div>
+</section>
+
+<div id="app" hidden>
+
+<section>
+  <h2>Plan document</h2>
+  <div class="doc">
+    <input id="docLink" inputmode="url" autocomplete="off">
+    <a id="docOpen" href="#" target="_blank" rel="noopener">Open</a>
+  </div>
+  <div class="nums" id="nums" style="margin-top:12px"></div>
+</section>
+
+<section>
+  <h2>Saved land searches</h2>
+  <div id="counties"></div>
+  <div class="note" id="searchNote"></div>
+</section>
+
+<section>
+  <h2>This week's watch</h2>
+  <div class="mast-sub" id="watchMeta"></div>
+  <div class="list" id="watch"></div>
+  <div class="note" id="watchNote"></div>
+</section>
+
+<section>
+  <h2>Listings worth watching</h2>
+  <label for="lName">Name or address</label>
+  <input id="lName">
+  <div class="row">
+    <div><label for="lCounty">County</label><select id="lCounty"></select></div>
+    <div><label for="lAcres">Acres</label><input id="lAcres" type="number" inputmode="decimal"></div>
+  </div>
+  <div class="row">
+    <div><label for="lPrice">Price ($)</label><input id="lPrice" type="number" inputmode="numeric"></div>
+    <div><label for="lScore">Score, 0–50</label><input id="lScore" type="number" inputmode="numeric" min="0" max="50" placeholder="from the scorecard"></div>
+  </div>
+  <label for="lLink">Link</label>
+  <input id="lLink" inputmode="url" placeholder="https://…">
+  <button id="addBtn">Add to watch list</button>
+  <div class="list" id="listings"></div>
+  <div class="note" id="scorecardNote"></div>
+</section>
+
+<section>
+  <h2>Next 90 days</h2>
+  <ul class="checks" id="checks"></ul>
+</section>
+
+<section>
+  <h2 id="courseHeading"></h2>
+  <div id="courses"></div>
+  <div class="note" id="courseNote"></div>
+</section>
+
+</div>
+
+<div class="flash" id="flash" role="status" hidden></div>
+
+<script>
+(function(){
+  var API='/api/farm';
+  var C=null, state={doc:'',listings:[],checks:{}}, watch={weekOf:'',parcels:[]}, watchItems=[];
+  var pending=0;
+  function $(i){return document.getElementById(i);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function safeUrl(u){u=String(u||'');return /^https?:\/\/\S+$/i.test(u)?u:'';}
+  function money(n){return n?'$'+Number(n).toLocaleString():'—';}
+  function perAcre(l){return (l.price&&l.acres)?' · $'+Math.round(l.price/l.acres).toLocaleString()+'/ac':'';}
+  function text(id,v){$(id).textContent=v==null?'':v;}
+
+  var flashT;
+  function flash(msg){var f=$('flash');f.textContent=msg;f.hidden=false;clearTimeout(flashT);flashT=setTimeout(function(){f.hidden=true;},6000);}
+
+  function gate(title,msg,href,linkText){
+    $('app').hidden=true;$('gate').hidden=false;text('gateTitle',title);
+    $('gateMsg').innerHTML=esc(msg)+(href?' <a href="'+href+'">'+esc(linkText)+'</a>':'');
+  }
+
+  // ---- load: everything comes from the server (John only) ----
+  function load(){
+    return fetch(API,{cache:'no-store',credentials:'same-origin'}).then(function(r){
+      if(r.status===401)return gate('Sign in first','Your Brown Life session has ended.','/','Open Brown Life to sign in →');
+      if(r.status===403)return gate('Not available','This page is not part of this sign-in.','/','Back to Brown Life →');
+      if(r.status===423)return gate('Locked','Change your Brown Life PIN first: Settings → Change my PIN. This page stays locked while the old default PIN still works.','/','Open Brown Life →');
+      if(!r.ok)throw 0;
+      return r.json().then(function(d){
+        var first=!C;C=d.content||{};state=d.state||state;watch=d.watch||watch;
+        if(first)build();
+        renderLive();$('gate').hidden=true;$('app').hidden=false;
+      });
+    }).catch(function(){
+      if(!C)gate('Couldn\'t load','Check your connection and reload the page.');
+      else flash('Couldn\'t refresh — showing what was loaded.');
+    });
+  }
+
+  // ---- save: one small change at a time, server returns the new state ----
+  function op(body){
+    pending++;
+    return fetch(API,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store',credentials:'same-origin'})
+      .then(function(r){return r.json().catch(function(){return {};}).then(function(d){
+        if(r.status===401)throw 'Signed out — sign in to Brown Life again. That change was not saved.';
+        if(!r.ok)throw (d&&d.error&&d.error!=='server error')?d.error:'Couldn\'t save — try again.';
+        state=d.state;return true;
+      });})
+      .catch(function(m){flash(typeof m==='string'?m:'Couldn\'t save — check your connection.');return false;})
+      .then(function(ok){pending--;renderLive();return ok;});
+  }
+
+  // ---- one-time build from the plan content ----
+  function build(){
+    text('title',C.title||'The Farm');
+    text('tagline',C.tagline);
+    var p=String(C.targetDate||'').split('-');
+    if(p.length===3){
+      var target=new Date(+p[0],+p[1]-1,+p[2]);
+      text('days',Math.max(0,Math.round((target-new Date())/86400000)));
+      text('countLabel',C.countLabel);$('phase').hidden=false;
+    }
+    if(C.phaseLabel){text('phaseLabel',C.phaseLabel);text('phaseText',C.phaseText);$('phaseLine').hidden=false;}
+
+    $('docLink').placeholder=C.docPlaceholder||'';
+    $('nums').innerHTML=(C.nums||[]).map(function(n){
+      return '<div class="num"><div class="v">'+esc(n[0])+'</div><div class="k">'+esc(n[1])+'</div></div>';
+    }).join('');
+
+    // saved searches
+    var sites=function(c){return [
+      ['LandWatch','https://www.landwatch.com/pennsylvania-land-for-sale/'+c+'-county'],
+      ['Land.com','https://www.land.com/'+c.charAt(0).toUpperCase()+c.slice(1)+'-County-PA/farms/'],
+      ['LandSearch','https://www.landsearch.com/farms/'+c+'-county-pa'],
+      ['Land & Farm','https://www.landandfarm.com/search/pennsylvania/'+c+'-county-land-for-sale/']
+    ];};
+    var counties=C.counties||[];
+    $('counties').innerHTML=counties.map(function(c){
+      var slug=String(c[2]||'').toLowerCase().replace(/[^a-z-]/g,'');
+      return '<div class="county"><h3>'+esc(c[0])+' County<span>'+esc(c[1])+'</span></h3><div class="links">'+
+        sites(slug).map(function(s){return '<a href="'+esc(s[1])+'" target="_blank" rel="noopener">'+esc(s[0])+'</a>';}).join('')+'</div></div>';
+    }).join('');
+    text('searchNote',C.searchNote);
+    text('watchNote',C.watchNote);
+
+    // listing form
+    var ph=C.listingPlaceholders||{};
+    $('lName').placeholder=ph.name||'';$('lAcres').placeholder=ph.acres||'';$('lPrice').placeholder=ph.price||'';
+    $('lCounty').innerHTML=counties.map(function(c){return '<option>'+esc(c[0])+'</option>';}).join('')+'<option>Other</option>';
+    text('scorecardNote',C.scorecardNote);
+
+    // 90-day checks
+    $('checks').innerHTML=(C.checks||[]).map(function(t,i){
+      return '<li><input type="checkbox" data-i="'+i+'" aria-label="'+esc(t)+'"><span>'+esc(t)+'</span></li>';
+    }).join('');
+
+    // courses — highlights the current month
+    text('courseHeading',C.courseHeading);
+    var courses=C.courses||[], now=new Date(), ym=now.getFullYear()*12+now.getMonth(), cur=-1;
+    courses.forEach(function(c,i){if(c[2]*12+c[3]<=ym)cur=i;});
+    $('courses').innerHTML=courses.map(function(c,i){
+      return '<div class="course'+(i===cur?' now':'')+'"><div class="when">'+esc(c[0])+'</div><div>'+esc(c[1])+'</div></div>';
+    }).join('');
+    text('courseNote',C.courseNote);
+  }
+
+  // ---- everything that changes: doc link, listings, weekly watch, checks ----
+  function renderLive(){
+    var docIn=$('docLink');
+    if(document.activeElement!==docIn)docIn.value=state.doc||'';
+    $('docOpen').href=safeUrl(state.doc)||'#';
+    renderListings();renderWatch();
+    Array.prototype.forEach.call($('checks').querySelectorAll('input[data-i]'),function(el){
+      var on=!!state.checks[el.getAttribute('data-i')];el.checked=on;el.parentNode.className=on?'done':'';
+    });
+  }
+
+  function listingRow(l,button){
+    var u=safeUrl(l.link);
+    var name=u?'<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(l.name)+'</a>':esc(l.name);
+    return '<div class="item"><div><div class="t">'+name+'</div><div class="m">'+esc(l.county)+' · '+esc(l.acres||'?')+' ac · '+money(l.price)+perAcre(l)+
+      (l.drive?' · drive: '+esc(l.drive):'')+' &nbsp;'+button+'</div>'+(l.why?'<div class="m">'+esc(l.why)+'</div>':'')+'</div>'+
+      '<div class="score">'+(l.score!=null&&l.score!==''?esc(l.score):'–')+'<small>of 50</small></div></div>';
+  }
+
+  function renderListings(){
+    var w=$('listings');
+    if(!state.listings.length){w.innerHTML='<div class="empty">Nothing logged yet. Open a county search above and add the first parcel worth a drive.</div>';return;}
+    w.innerHTML=state.listings.slice().sort(function(a,b){return (b.score||0)-(a.score||0);}).map(function(l){
+      return listingRow({name:l.name,county:l.county,acres:l.acres,price:l.price,score:l.score,link:l.link},
+        '<button class="small" data-del="'+esc(l.id)+'">remove</button>');
+    }).join('');
+  }
+
+  function renderWatch(){
+    watchItems=(watch.parcels||[]).slice().sort(function(a,b){return (b.score||0)-(a.score||0);});
+    if(!watch.weekOf){
+      text('watchMeta','No weekly report yet. The Monday land-watch task fills this in.');
+      $('watch').innerHTML='';return;
+    }
+    text('watchMeta','Week of '+watch.weekOf+' · '+watchItems.length+' parcels · top score '+(watchItems[0]?watchItems[0].score:'–')+'/50');
+    if(!watchItems.length){$('watch').innerHTML='<div class="empty">Nothing met the criteria this week.</div>';return;}
+    $('watch').innerHTML=watchItems.map(function(l,i){
+      var u=safeUrl(l.link);
+      var tracked=!!u&&state.listings.some(function(x){return x.link===u;});
+      return listingRow(l,'<button class="small" data-track="'+i+'" '+(tracked?'disabled':'')+'>'+(tracked?'tracked':'Track')+'</button>');
+    }).join('');
+  }
+
+  // ---- events ----
+  $('docLink').addEventListener('change',function(){op({op:'doc',value:this.value.trim()});});
+
+  $('addBtn').addEventListener('click',function(){
+    var name=$('lName').value.trim();if(!name){$('lName').focus();return;}
+    var link=$('lLink').value.trim();
+    if(link&&!safeUrl(link)){flash('Paste a full link starting with https://');$('lLink').focus();return;}
+    var btn=this;btn.disabled=true;
+    op({op:'addListing',listing:{name:name,county:$('lCounty').value,acres:$('lAcres').value,price:$('lPrice').value,score:$('lScore').value,link:link}})
+      .then(function(ok){btn.disabled=false;if(ok)['lName','lAcres','lPrice','lScore','lLink'].forEach(function(i){$(i).value='';});});
+  });
+
+  $('listings').addEventListener('click',function(e){
+    var id=e.target.getAttribute('data-del');if(!id)return;
+    e.target.disabled=true;op({op:'removeListing',id:id});
+  });
+
+  $('watch').addEventListener('click',function(e){
+    var i=e.target.getAttribute('data-track');if(i==null)return;var l=watchItems[+i];if(!l)return;
+    e.target.disabled=true;e.target.textContent='tracked';
+    op({op:'addListing',listing:{name:l.name,county:l.county,acres:l.acres,price:l.price,score:l.score,link:l.link}});
+  });
+
+  $('checks').addEventListener('change',function(e){
+    var i=e.target.getAttribute('data-i');if(i==null)return;
+    e.target.parentNode.className=e.target.checked?'done':'';
+    op({op:'check',i:+i,on:e.target.checked});
+  });
+
+  // External links: an installed home-screen app ignores target="_blank" and would
+  // replace itself with the site, so force a real new window there (as Brown Life does).
+  var standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('a[target="_blank"]');if(!a)return;
+    var h=a.getAttribute('href');
+    if(!h||h==='#'){e.preventDefault();return;}
+    if(standalone&&!(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)){e.preventDefault();window.open(h,'_blank','noopener,noreferrer');}
+  });
+
+  // Live everywhere: pick up changes made on the other device when this one comes back.
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&C&&!pending)load();});
+  window.addEventListener('pageshow',function(e){if(e.persisted&&C&&!pending)load();});
+
+  load();
+})();
+</script>
+</body>
+</html>

@@ -28,3 +28,5 @@ jobs:
           node-version: "20"
       - name: Auth has no backdoors
         run: node tests/auth-no-backdoors.test.js
+      - name: The Farm stays private
+        run: node tests/farm.test.js

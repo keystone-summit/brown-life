@@ -1,7 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "ignoreCommand": "node tests/auth-no-backdoors.test.js && exit 1 || exit 0",
+  "ignoreCommand": "node tests/auth-no-backdoors.test.js && node tests/farm.test.js && exit 1 || exit 0",
+  "rewrites": [
+    {
+      "source": "/land-watch.json",
+      "destination": "/api/farm?part=watch"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -59,6 +65,15 @@
       ]
     },
     {
+      "source": "/farm",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/api/(.*)",
       "headers": [
         {
@@ -85,6 +100,9 @@
       "maxDuration": 8
     },
     "api/supplements.js": {
+      "maxDuration": 8
+    },
+    "api/farm.js": {
       "maxDuration": 8
     },
     "api/ai-chat.js": {
