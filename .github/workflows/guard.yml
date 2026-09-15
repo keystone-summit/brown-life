@@ -30,3 +30,5 @@ jobs:
         run: node tests/auth-no-backdoors.test.js
       - name: The Farm stays private
         run: node tests/farm.test.js
+      - name: Change-PIN works and is reachable on a phone
+        run: node tests/pin-change.test.js

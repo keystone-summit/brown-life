@@ -190,7 +190,7 @@
     return fetch(API,{cache:'no-store',credentials:'same-origin'}).then(function(r){
       if(r.status===401)return gate('Sign in first','Your Brown Life session has ended.','/','Open Brown Life to sign in →');
       if(r.status===403)return gate('Not available','This page is not part of this sign-in.','/','Back to Brown Life →');
-      if(r.status===423)return gate('Locked','Change your Brown Life PIN first: Settings → Change my PIN. This page stays locked while the old default PIN still works.','/','Open Brown Life →');
+      if(r.status===423)return gate('Locked','Change your Brown Life PIN first. This page stays locked while the old default PIN still works. After the change, sign in with the new PIN and tap The Farm again.','/?tab=settings','Change my PIN now →');
       if(!r.ok)throw 0;
       return r.json().then(function(d){
         var first=!C;C=d.content||{};state=d.state||state;watch=d.watch||watch;

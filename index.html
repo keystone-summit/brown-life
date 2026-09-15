@@ -456,10 +456,14 @@
   .signout-btn { display: inline-flex; align-items: center; gap: 8px; }
 
   @media (max-width: 768px) {
-    .sidebar { position: fixed; bottom: 0; left: 0; right: 0; flex-direction: row !important; overflow-x: auto; border-top: 1px solid var(--border-soft); padding: 8px !important; z-index: 50; width: 100% !important; }
+    /* The phone tab bar scrolls sideways and Settings is the LAST tab, so on an
+       iPhone it sits off-screen. The top bar's "PIN" button (always visible) is
+       the reliable way in; ?tab=settings deep-links to the same screen. */
+    .sidebar { position: fixed; bottom: 0; left: 0; right: 0; flex-direction: row !important; overflow-x: auto; border-top: 1px solid var(--border-soft); padding: 8px !important; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; z-index: 50; width: 100% !important; }
     .sidebar .nav-item { flex-direction: column; font-size: 10px; gap: 2px; padding: 6px 10px; white-space: nowrap; min-width: 64px; }
     .sidebar .brand { display: none !important; }
-    .main { padding-bottom: 80px !important; }
+    .main { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
+    .app-topbar .signout-btn { padding: 8px 10px; }
   }
 </style>
 </head>
@@ -1617,10 +1621,22 @@ function Settings({ user, onPinChanged }) {
   );
 }
 
+// Deep link: /?tab=settings (etc.) opens that tab — after sign-in too, since the
+// PIN gate renders inside App and the tab state survives it. The Farm's lock
+// notice links here. The param is stripped so a reload lands on Today.
+const TAB_KEYS = ['home', 'cal', 'tasks', 'goals', 'supp', 'chat', 'links', 'settings'];
+function initialTab() {
+  try {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    if (t) window.history.replaceState(null, '', window.location.pathname);
+    return TAB_KEYS.includes(t) ? t : 'home';
+  } catch { return 'home'; }
+}
+
 function App() {
   const [authed, setAuthed]   = useState(null);
   const [user, setUser]       = useState(null);
-  const [tab, setTab]         = useState('home');
+  const [tab, setTab]         = useState(initialTab);
   const [events, setEvents]   = useState([]);
   const [tasks, setTasks]     = useState([]);
   const [goals, setGoals]     = useState([]);
@@ -1730,12 +1746,16 @@ function App() {
             <img src="/brown-family-crest.png" alt="" className="topbar-crest" />
             <span className="font-heraldic topbar-wordmark text-amber-light tracking-wider">Brown Life</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {user && user.name && (
               <span className="text-xs text-soft hidden sm:inline">
                 Signed in as <span className="text-amber-light font-medium">{user.name}</span>
               </span>
             )}
+            <button className="btn-ghost text-sm signout-btn" onClick={() => setTab('settings')} title="Change my PIN" data-change-pin>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="m16 7 3 3"/><path d="m19 4 2 2"/></svg>
+              <span className="sm:hidden">PIN</span><span className="hidden sm:inline">Change PIN</span>
+            </button>
             <button className="btn-ghost text-sm signout-btn" onClick={logout} title="Sign out">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
               <span>Sign Out</span>
