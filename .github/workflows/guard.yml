@@ -32,3 +32,5 @@ jobs:
         run: node tests/farm.test.js
       - name: Change-PIN works and is reachable on a phone
         run: node tests/pin-change.test.js
+      - name: The Farm saves server-side and follows John across devices
+        run: node tests/farm-persistence.test.js

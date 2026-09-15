@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "ignoreCommand": "node tests/auth-no-backdoors.test.js && node tests/farm.test.js && node tests/pin-change.test.js && exit 1 || exit 0",
+  "ignoreCommand": "node tests/auth-no-backdoors.test.js && node tests/farm.test.js && node tests/pin-change.test.js && node tests/farm-persistence.test.js && exit 1 || exit 0",
   "rewrites": [
     {
       "source": "/land-watch.json",
