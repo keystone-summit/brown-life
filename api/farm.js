@@ -1,4 +1,5 @@
-// The Farm — John's farm plan: plan content, his live state, the weekly land watch.
+// The Farm — the family farm plan (D + K share ONE plan): plan content, the
+// shared live state, the weekly land watch.
 //
 // GET   /api/farm               -> { content, state, watch, updated_at }
 // PATCH /api/farm   {op, ...}   -> applies ONE change to state, returns { state }
@@ -11,10 +12,14 @@
 // 🔒 Private by construction. This repo is PUBLIC, so nothing personal ships in
 // it: the plan text, numbers, counties, checklist and courses live in the
 // dblife_farm row and are served only from here.
-//   * John only (FARM_OWNER). The other Brown Life user gets 403.
-//   * Locked (423) until John's PIN has been changed since the default PINs
-//     were seeded — those defaults are readable in this repo's history, so
-//     until then anyone could sign in as John. Fails closed on a DB error.
+//   * Members only (FARM_MEMBERS: D = john, K = lisa — John approved
+//     2026-09-15, joint family purchase). Both read and edit the SAME row
+//     (FARM_ROW); there is no per-user copy. Anyone else gets 403.
+//   * Locked (423) per person until THAT user's PIN has been changed since the
+//     default PINs were seeded — those defaults are readable in this repo's
+//     history, so until then anyone could sign in as them. Fails closed on a
+//     DB error. Adding K did not relax this: she stays locked until she
+//     changes her own PIN.
 // Guarded by tests/farm.test.js (CI + the vercel.json build gate).
 
 const crypto = require('crypto');
@@ -22,7 +27,8 @@ const { requireUser } = require('./_lib/auth');
 const { supaSelect, supaPatch } = require('./_lib/supa');
 
 const TABLE = 'dblife_farm';
-const FARM_OWNER = 'john';
+const FARM_ROW = 'john';                  // the one shared plan row (user_id)
+const FARM_MEMBERS = ['john', 'lisa'];   // D and K — both edit FARM_ROW
 // The default PINs were seeded at 2026-06-07 11:39 UTC (migration 006). A PIN
 // row last written at or before this still holds the published default.
 const DEFAULT_PINS_SEEDED_AT = Date.parse('2026-06-07T12:00:00Z');
@@ -145,7 +151,7 @@ module.exports = async function (req, res) {
 
   try {
     const part = new URL(req.url, 'http://localhost').searchParams.get('part');
-    const owner = `user_id=eq.${FARM_OWNER}`;
+    const owner = `user_id=eq.${FARM_ROW}`;
 
     // The Monday task: bearer token, no session. Writes the watch and nothing else.
     if (part === 'watch' && req.method === 'PUT') {
@@ -160,7 +166,7 @@ module.exports = async function (req, res) {
 
     const me = requireUser(req, res);
     if (!me) return;
-    if (me.id !== FARM_OWNER) return send(res, 403, { error: 'forbidden' });
+    if (!FARM_MEMBERS.includes(me.id)) return send(res, 403, { error: 'forbidden' });
     if (!(await pinRotated(me.id))) return send(res, 423, { error: 'locked', locked: 'pin' });
 
     const rows = await supaSelect(TABLE, `${owner}&select=content,state,watch,updated_at&limit=1`);

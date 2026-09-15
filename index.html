@@ -842,8 +842,8 @@ function Home({ user, events, tasks, supps, todayLog, onTakeSupp, snapOs, snapGr
         <p className="text-muted text-sm mt-1">{fmtDate(today, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
       </div>
 
-      {/* The Farm — John's own page (/farm). Its data is John-only, served by /api/farm. */}
-      {user && user.id === 'john' && (
+      {/* The Farm (/farm) — one shared family plan for D and K, served by /api/farm. */}
+      {user && (user.id === 'john' || user.id === 'lisa') && (
         <a href="/farm" style={{ display: 'block', background: '#1C1F27', border: '1px solid #2D323E', borderRadius: 14, padding: 16, color: '#E9E5DB', textDecoration: 'none' }}>
           <div style={{ fontFamily: "'Fraunces',serif", fontSize: 19 }}>The Farm</div>
           <div style={{ fontSize: 13, color: '#888E9C', marginTop: 4 }}>Phase 0 — Prepare · land watch, courses, 90-day list</div>

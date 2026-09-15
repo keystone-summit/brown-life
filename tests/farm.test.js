@@ -5,9 +5,10 @@
 // family). This repo is PUBLIC, so the plan lives in Supabase and is served
 // only by api/farm.js. This test holds that line:
 //
-//   * nobody but John gets any of it — no session 401, the other user 403;
-//   * it stays locked (423) while John's PIN is still the published default,
-//     and fails closed if the DB can't say otherwise;
+//   * only D (john) and K (lisa) get any of it, and they share ONE plan —
+//     no session 401 (John approved adding K 2026-09-15);
+//   * it stays locked (423) for each of them while THEIR PIN is still the
+//     published default, and fails closed if the DB can't say otherwise;
 //   * the Monday task's token can replace the watch and nothing else;
 //   * every write is whitelisted and typed (no javascript: links);
 //   * the renderer in the repo carries no plan figures, and no localStorage.
@@ -49,8 +50,8 @@ function farmRow() {
 }
 
 // In-memory stand-in for the two tables api/farm.js reads.
-function fakeDb({ pinAt = ROTATED, row = farmRow(), down = false } = {}) {
-  const db = { auth: pinAt ? [{ id: 'john', updated_at: pinAt }, { id: 'lisa', updated_at: SEEDED }] : [], farm: row ? [row] : [], patches: [] };
+function fakeDb({ pinAt = ROTATED, lisaAt = SEEDED, row = farmRow(), down = false } = {}) {
+  const db = { auth: pinAt ? [{ id: 'john', updated_at: pinAt }, { id: 'lisa', updated_at: lisaAt }] : [], farm: row ? [row] : [], patches: [] };
   db.impl = {
     supaSelect: async (table, q) => {
       if (down) throw new Error('supabase unreachable (test)');
@@ -112,11 +113,11 @@ async function call(farm, { method = 'GET', url = '/api/farm', cookie = '', auth
     const anon = await call(farm);
     ok('no session: 401 and none of the plan', anon.status === 401 && !anon.raw.includes(MARKER), anon.raw);
     const lisa = await call(farm, { cookie: cookieFor('lisa') });
-    ok('the other Brown Life user: 403 and none of the plan', lisa.status === 403 && !lisa.raw.includes(MARKER), lisa.raw);
+    ok('K, PIN still the default: locked (423) and none of the plan', lisa.status === 423 && !lisa.raw.includes(MARKER), lisa.raw);
     const lisaW = await call(farm, { url: '/api/farm?part=watch', cookie: cookieFor('lisa') });
-    ok('the other user cannot read the watch either', lisaW.status === 403);
+    ok('K, default PIN: cannot read the watch either', lisaW.status === 423);
     const lisaP = await call(farm, { method: 'PATCH', cookie: cookieFor('lisa'), body: { op: 'doc', value: 'https://x.test' } });
-    ok('the other user cannot write', lisaP.status === 403 && db.patches.length === 0);
+    ok('K, default PIN: cannot write', lisaP.status === 423 && db.patches.length === 0);
     const forged = await call(farm, { cookie: 'brownlife_auth=john.2099-01-01T00:00:00.000Z.AAAA' });
     ok('a forged cookie gets nothing', forged.status === 401);
     const john = await call(farm, { cookie: cookieFor('john') });
@@ -125,6 +126,28 @@ async function call(farm, { method = 'GET', url = '/api/farm', cookie = '', auth
     ok('state comes back normalized', john.json.state && Array.isArray(john.json.state.listings) && typeof john.json.state.checks === 'object');
     const w = await call(farm, { url: '/api/farm?part=watch', cookie: cookieFor('john') });
     ok('John reads the watch as {weekOf, parcels}', w.status === 200 && Array.isArray(w.json.parcels) && 'weekOf' in w.json, w.raw);
+  }
+
+  // ---- 1b. K shares John's plan once HER PIN is changed ------------------
+  {
+    const db = fakeDb({ lisaAt: ROTATED });
+    const { farm, cookieFor } = load(db);
+    const k = await call(farm, { cookie: cookieFor('lisa') });
+    ok('K, PIN changed: 200 with the SAME plan as John', k.status === 200 && k.json.content.secret === MARKER, k.raw);
+    const kw = await call(farm, { url: '/api/farm?part=watch', cookie: cookieFor('lisa') });
+    ok('K reads the weekly watch', kw.status === 200 && Array.isArray(kw.json.parcels));
+    const kp = await call(farm, { method: 'PATCH', cookie: cookieFor('lisa'), body: { op: 'addListing', listing: { name: 'K fixture parcel', county: 'X' } } });
+    ok('K can edit (add a listing)', kp.status === 200, kp.raw);
+    ok('K\'s edit lands in the ONE shared row (user_id john), no second copy',
+      db.farm.length === 1 && db.farm[0].user_id === 'john' && db.patches.every((p) => p.q.includes('user_id=eq.john')));
+    const j = await call(farm, { cookie: cookieFor('john') });
+    ok('John sees K\'s listing', j.status === 200 && j.json.state.listings.some((l) => l.name === 'K fixture parcel'), j.raw);
+  }
+  {
+    const db = fakeDb({ pinAt: SEEDED, lisaAt: ROTATED });
+    const { farm, cookieFor } = load(db);
+    ok('the lock is per person: John still on the default is locked even when K has changed hers',
+      (await call(farm, { cookie: cookieFor('john') })).status === 423 && (await call(farm, { cookie: cookieFor('lisa') })).status === 200);
   }
 
   // ---- 2. Locked while the published default PIN still works ------------
@@ -255,7 +278,10 @@ async function call(farm, { method = 'GET', url = '/api/farm', cookie = '', auth
   ok('this test gates the Vercel build', /tests\/farm\.test\.js/.test(vercel.ignoreCommand || ''));
 
   const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  ok('the deck card opens /farm and only for John', /user\.id === 'john' && \(\s*<a href="\/farm"/.test(index));
+  ok('the deck card opens /farm for D and K only', /user && \(user\.id === 'john' \|\| user\.id === 'lisa'\) && \(\s*<a href="\/farm"/.test(index));
+  const api = fs.readFileSync(FARM, 'utf8');
+  ok('Farm members are exactly D and K', /const FARM_MEMBERS = \['john', 'lisa'\];/.test(api));
+  ok('the PIN lock still checks the SIGNED-IN user', /pinRotated\(me\.id\)/.test(api));
 
   if (failures) {
     console.log('\nfarm.test -- FAILED (' + failures + ')');

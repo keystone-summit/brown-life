@@ -9,8 +9,8 @@
 <!--
   The Farm — John's design, kept as supplied (palette, fonts, cards).
   This repo is PUBLIC: this file is only a renderer. Every word of the plan,
-  and his listings / checklist / doc link, comes from /api/farm (John only,
-  server-side in Supabase), so it follows him between phone and desktop.
+  and the listings / checklist / doc link, comes from /api/farm (D and K share
+  one plan, server-side in Supabase), so it follows them between phone and desktop.
   Guarded by tests/farm.test.js.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -185,7 +185,7 @@
     $('gateMsg').innerHTML=esc(msg)+(href?' <a href="'+href+'">'+esc(linkText)+'</a>':'');
   }
 
-  // ---- load: everything comes from the server (John only) ----
+  // ---- load: everything comes from the server (shared D + K plan) ----
   function load(){
     return fetch(API,{cache:'no-store',credentials:'same-origin'}).then(function(r){
       if(r.status===401)return gate('Sign in first','Your Brown Life session has ended.','/','Open Brown Life to sign in →');

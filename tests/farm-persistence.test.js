@@ -134,6 +134,17 @@ async function call(farm, { method = 'GET', cookie, body } = {}) {
   r = await call(s.farm, { cookie: s.sessionFor('john') });
   ok('a brand-new sign-in still sees everything saved', r.status === 200 && r.json.state.listings.length === 1 && r.json.state.doc);
 
+  // ---- K shares the same plan (her PIN changed in this fixture) ------------
+  s = coldStart(db);
+  const kPhone = s.sessionFor('lisa');
+  r = await call(s.farm, { cookie: kPhone });
+  ok('K sees John\'s saved listing and plan link', r.status === 200 && r.json.state.listings.length === 1 && r.json.state.doc === 'https://docs.example/plan', r.raw);
+  r = await call(s.farm, { method: 'PATCH', cookie: kPhone, body: { op: 'check', i: 5, on: true } });
+  ok('K ticks a 90-day box -> 200', r.status === 200, r.raw);
+  s = coldStart(db);
+  r = await call(s.farm, { cookie: s.sessionFor('john') });
+  ok('John, on another device, sees K\'s tick', r.status === 200 && r.json.state.checks['5'] === true, r.raw);
+
   // ---- STATIC: the page saves through the server, never the browser ---------
   const html = fs.readFileSync(path.join(ROOT, 'farm.html'), 'utf8');
   ok('page: plan-doc link saves via the server', /op\(\{op:'doc'/.test(html));

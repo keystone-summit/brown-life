@@ -200,7 +200,7 @@ const change = (m, cookie, cur, nw, cf = nw, ip) =>
   const farmAfter = await call(m.farm, { url: '/api/farm', cookie: j2.cookie });
   ok('after: The Farm is unlocked (200)', farmAfter.status === 200, farmAfter.raw);
   const farmLisa = await call(m.farm, { url: '/api/farm', cookie: (await login(m, P.lisa)).cookie });
-  ok('after: The Farm is still John-only (other user 403)', farmLisa.status === 403);
+  ok('after: John\'s change does not unlock K — she stays locked (423) until she changes hers', farmLisa.status === 423);
 
   // ---- 6. Brute force on change-PIN is throttled ----------------------------
   {
